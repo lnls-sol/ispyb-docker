@@ -13,6 +13,7 @@ Steps are:
 - [ ] Ingest data for BioSAXS experiments
 - [ ] Ingest data for MX experiments
 - [ ] Ingest data for CryoEM experiments
+- [ ] Install and configure EXI
 
 
 ## Installation
