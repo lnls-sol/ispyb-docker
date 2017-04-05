@@ -38,7 +38,7 @@ RUN cd /opt && tar xvfz jdk-8u112-linux-x64.tar.gz && ln -s jdk1.8.0_112 jdk
 #######################
 
 RUN cd /opt && wget http://mirrors.standaloneinstaller.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.zip && unzip apache-maven-3.3.9-bin.zip
-COPY settings.xml /root/.m2/settings.xml
+COPY config/settings.xml /root/.m2/settings.xml
 
 #######################
 # INSTALLING WILDFLY
@@ -51,7 +51,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	# CONFIGURING WILDFLY 
 	#############################
 
-	COPY standalone.xml /opt/wildfly/standalone/configuration/standalone.xml
+	COPY config/standalone.xml /opt/wildfly/standalone/configuration/standalone.xml
 
 	        #############################
 		## SIMPLE AUTHENTICATOR
@@ -79,7 +79,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	# REPLACE AUTHENTICATOR
 	#############################
 
-	COPY ESRFLoginModule.java /opt/ISPyB/ispyb-ws/src/main/java/ispyb/ws/rest/security/login/ESRFLoginModule.java
+	COPY java/ESRFLoginModule.java /opt/ISPyB/ispyb-ws/src/main/java/ispyb/ws/rest/security/login/ESRFLoginModule.java
 
 	#############################
 	# BUILDING LATEST VERSION
