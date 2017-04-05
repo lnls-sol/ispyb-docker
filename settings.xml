@@ -1,0 +1,23 @@
+<settings>
+	<proxies>
+		<proxy>
+			<id>esrf</id>
+			<active>true</active>
+			<protocol>http</protocol>
+			<host>proxy.esrf.fr</host>
+			<port>3128</port>
+			<nonProxyHosts>localhost</nonProxyHosts>
+		</proxy>
+		<proxy>
+			<id>esrf</id>
+			<active>true</active>
+			<protocol>https</protocol>
+			<host>proxy.esrf.fr</host>
+			<port>3128</port>
+			<nonProxyHosts>localhost</nonProxyHosts>
+		</proxy>
+	</proxies>	
+	<activeProfiles>
+		<activeProfile>ESRF</activeProfile>
+	</activeProfiles>
+</settings>
