@@ -65,6 +65,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 		COPY connector/mysql-connector-java-5.1.21.jar /opt/wildfly/modules/system/layers/base/com/mysql/main/mysql-connector-java-5.1.21.jar
          	COPY connector/module.xml /opt/wildfly/modules/system/layers/base/com/mysql/main/module.xml
 
+
 #######################
 # INSTALLING ISPyB
 #######################
@@ -80,6 +81,13 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	#############################
 
 	COPY java/ESRFLoginModule.java /opt/ISPyB/ispyb-ws/src/main/java/ispyb/ws/rest/security/login/ESRFLoginModule.java
+
+        #############################
+	# REPLACE POM.XML
+	#############################
+
+	COPY java/pom.xml /opt/ISPyB/ispyb-ejb/pom.xml
+
 
 	#############################
 	# BUILDING LATEST VERSION
@@ -98,13 +106,14 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	&& mvn -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  install:install-file -Dfile=ispyb-WSclient-userportal-gen-1.3.jar -DgroupId=ispyb -DartifactId=ispyb-WSclient-userportal-gen -Dversion=1.3 -Dpackaging=jar \
 	&& cd /opt/ISPyB && sed -i 's/${jboss.modules.base}/\/opt\/wildfly\/modules\/system\/layers\/base/g' ispyb-ui/pom.xml \
         && cd /opt/ISPyB && sed -i 's/${jboss.modules.base}/\/opt\/wildfly\/modules\/system\/layers\/base/g' ispyb-bcr/pom.xml \
-	&&  mvn clean install -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  
+	&&  mvn clean install -PALBA -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  
 	
 	#############################
 	# DEPLOY ISPyB
 	#############################
 
 	RUN cp /opt/ISPyB/ispyb-ear/target/ispyb.ear /opt/wildfly/standalone/deployments/ispyb.ear
+
 
 #######################
 # INSTALLING DB
@@ -137,6 +146,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	#############################
 	RUN service mysql start && for entry in /opt/ISPyB/ispyb-ejb/db/scripts/ahead/*; do  echo "Running " $entry; mysql -upxuser -ppxuser pydb < $entry; done
 
+
 ############################
 # INGESTING
 ############################
@@ -151,6 +161,41 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	# USER PORTAL
 	#############################
         #RUN service mysql start && /opt/wildfly/bin/standalone.sh -b 0.0.0.0 && cd /opt/ispyb-client/python/userportal && python Ingester.py
+
+
+#############################
+# INSTALLING EXI
+#############################
+
+	#############################
+	# DOWNLOADING APACHE TOMCAT
+	#############################
+
+	RUN cd /opt && wget http://wwwftp.ciril.fr/pub/apache/tomcat/tomcat-8/v8.5.13/bin/apache-tomcat-8.5.13.zip && unzip apache-tomcat-8.5.13.zip && ln -s apache-tomcat-8.5.13 tomcat
+	RUN cd /opt  && chmod +x /opt/tomcat/bin/*sh
+	RUN sed -i 's/8080/8090/g' /opt/tomcat/conf/server.xml
+
+	#############################
+	# INSTALLING NPM
+	#############################
+
+	RUN apt-get update && apt-get install -y npm nodejs-legacy 
+
+
+	#############################
+	# DOWNLOADING EXI
+	#############################
+
+	RUN cd /opt/tomcat/webapps && git clone https://github.com/ispyb/EXI.git
+
+	#############################
+	# BUILDING EXI
+	#############################
+
+	RUN echo '{ "proxy":"http://proxy.esrf.fr:3128", "https-proxy":"http://proxy.esrf.fr:3128"}' > /opt/tomcat/webapps/EXI/.bowerrc
+	RUN npm config set strict-ssl false && npm config set proxy http://proxy.esrf.fr:3128 && npm config set https-proxy http://proxy.esrf.fr:3128 && cd /opt/tomcat/webapps/EXI && npm install && npm install -g bower --allow-root && npm install -g grunt && bower install --allow-root  && grunt --force
+
+        
 
 	
 ##################

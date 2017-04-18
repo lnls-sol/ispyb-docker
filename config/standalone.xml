@@ -1,5 +1,17 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
+<server name="default-server">
+    <http-listener name="default" socket-binding="http"/>
+    <host name="default-host" alias="localhost">
+        <location name="/" handler="welcome-content"/>
+        <location name="/img" handler="images"/>
+    </host>
+</server>
+<handlers>
+    <file name="welcome-content" path="${jboss.home.dir}/welcome-content" directory-listing="false"/>
+    <file name="images" path="/var/images" directory-listing="true"/>
+</handlers>
+
 <server xmlns="urn:jboss:domain:2.2">
 
     <extensions>
