@@ -3,6 +3,8 @@ FROM debian:8
 
 MAINTAINER Alejandro DE MARIA <demariaa@esrf.fr>
 
+ENV profile ALBA
+
 ENV proxy proxy.esrf.fr 
 ENV proxy_port 3128
 
@@ -10,8 +12,8 @@ ENV http_proxy http://$proxy:$proxy_port
 ENV https_proxy https://$proxy:$proxy_port
 
 #ISPyB repository
-ENV repository https://github.com/antolinos/ISPyB.git
-ENV branch issue_67 
+ENV repository https://github.com/ispyb/ISPyB.git
+ENV branch master
 
 #ISPyB-client repository
 ENV client_repository https://github.com/ispyb/ispyb-client.git
@@ -80,7 +82,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	# REPLACE AUTHENTICATOR
 	#############################
 
-	COPY java/ESRFLoginModule.java /opt/ISPyB/ispyb-ws/src/main/java/ispyb/ws/rest/security/login/ESRFLoginModule.java
+	COPY java/AuthenticationRestWebService.java /opt/ISPyB/ispyb-ws/src/main/java/ispyb/ws/rest/security/AuthenticationRestWebService.java
 
         #############################
 	# REPLACE POM.XML
@@ -106,7 +108,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	&& mvn -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  install:install-file -Dfile=ispyb-WSclient-userportal-gen-1.3.jar -DgroupId=ispyb -DartifactId=ispyb-WSclient-userportal-gen -Dversion=1.3 -Dpackaging=jar \
 	&& cd /opt/ISPyB && sed -i 's/${jboss.modules.base}/\/opt\/wildfly\/modules\/system\/layers\/base/g' ispyb-ui/pom.xml \
         && cd /opt/ISPyB && sed -i 's/${jboss.modules.base}/\/opt\/wildfly\/modules\/system\/layers\/base/g' ispyb-bcr/pom.xml \
-	&&  mvn clean install -PALBA -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  
+	&&  mvn clean install -P $profile -Dhttps.proxyHost=$proxy -Dhttps.proxyPort=$proxy_port  
 	
 	#############################
 	# DEPLOY ISPyB
@@ -171,7 +173,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	# DOWNLOADING APACHE TOMCAT
 	#############################
 
-	RUN cd /opt && wget http://wwwftp.ciril.fr/pub/apache/tomcat/tomcat-8/v8.5.13/bin/apache-tomcat-8.5.13.zip && unzip apache-tomcat-8.5.13.zip && ln -s apache-tomcat-8.5.13 tomcat
+	RUN cd /opt && wget http://wwwftp.ciril.fr/pub/apache/tomcat/tomcat-8/v8.5.14/bin/apache-tomcat-8.5.14.zip && unzip apache-tomcat-8.5.14.zip && ln -s apache-tomcat-8.5.14 tomcat
 	RUN cd /opt  && chmod +x /opt/tomcat/bin/*sh
 	RUN sed -i 's/8080/8090/g' /opt/tomcat/conf/server.xml
 
@@ -196,7 +198,7 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	RUN npm config set strict-ssl false && npm config set proxy http://proxy.esrf.fr:3128 && npm config set https-proxy http://proxy.esrf.fr:3128 && cd /opt/tomcat/webapps/EXI && npm install && npm install -g bower --allow-root && npm install -g grunt && bower install --allow-root  && grunt --force
 
         
-
+	
 	
 ##################
 # DOCKER SUPERVISOR
