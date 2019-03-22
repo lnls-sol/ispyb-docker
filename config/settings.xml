@@ -1,23 +1,18 @@
 <settings>
-	<proxies>
-		<proxy>
-			<id>esrf</id>
-			<active>true</active>
-			<protocol>http</protocol>
-			<host>proxy.esrf.fr</host>
-			<port>3128</port>
-			<nonProxyHosts>localhost</nonProxyHosts>
-		</proxy>
-		<proxy>
-			<id>esrf</id>
-			<active>true</active>
-			<protocol>https</protocol>
-			<host>proxy.esrf.fr</host>
-			<port>3128</port>
-			<nonProxyHosts>localhost</nonProxyHosts>
-		</proxy>
-	</proxies>	
-	<activeProfiles>
-		<activeProfile>ESRF</activeProfile>
-	</activeProfiles>
+	<profiles>
+	<profile>
+    		<id>ispyb.site-GENERIC</id>
+
+    		<activation>
+      			<property>
+        			<name>ispyb.site</name>
+        			<value>GENERIC</value>
+      			</property>
+    		</activation>
+
+    		<properties>
+      			<jboss.home>C:/java/appServers/wildfly-8.2.0.Final</jboss.home>
+    		</properties>
+	</profile>
+	</profiles>
 </settings>
