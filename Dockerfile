@@ -1,15 +1,4 @@
-#FROM dockcs.esrf.fr/cs/debian8:latest
 FROM debian:9
-
-MAINTAINER Alejandro DE MARIA <demariaa@esrf.fr>
-
-#############################
-# ESRF specific for testing
-#############################
-#ENV proxy proxy.esrf.fr 
-#ENV proxy_port 3128
-#ENV http_proxy http://$proxy:$proxy_port
-#ENV https_proxy https://$proxy:$proxy_port
 
 
 
@@ -17,8 +6,11 @@ MAINTAINER Alejandro DE MARIA <demariaa@esrf.fr>
 #ENV profile GENERIC
 
 #ISPyB repository
-ENV repository https://github.com/lnls-sol/ISPyB.git
-ENV branch manaca
+#ENV repository https://github.com/lnls-sol/ISPyB.git
+#ENV branch manaca
+
+ENV repository https://github.com/ispyb/ISPyB.git
+ENV branch master
 
 #ISPyB-client repository
 #ENV client_repository https://github.com/ispyb/ispyb-client.git
@@ -87,8 +79,8 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
         #############################
 
         # Just copying the already downloaded repo
-        #RUN cd /opt && git clone $repository && cd ISPyB && git checkout $branch
-        COPY ISPyB /opt/ISPyB
+        RUN cd /opt && git clone $repository && cd ISPyB && git checkout $branch
+       
 
         #############################
         # REPLACE AUTHENTICATOR
@@ -130,4 +122,46 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
         #############################
 
         RUN cp /opt/ISPyB/ispyb-ear/target/ispyb.ear /opt/wildfly/standalone/deployments/ispyb.ear
+
+
+#######################
+# INSTALLING DB
+#######################
+
+	#############################
+	# CREATING DB
+	#############################
+
+	RUN service mysql start \
+	&& mysql -uroot -e "CREATE USER 'pxuser'@'%' IDENTIFIED BY 'pxuser';" \
+	&& mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pxuser'@'%';" \
+	&& mysql -uroot -e "CREATE DATABASE pyconfig;"  \
+	&& mysql -uroot -e "CREATE DATABASE pydb;" 
+
+	RUN service mysql start \
+	&& mysql -uroot -e "CREATE USER 'pxadmin'@'%' IDENTIFIED BY 'pxadmin';" \
+	&& mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pxadmin'@'%';" 
+
+	#############################
+	# CREATING SCHEMA
+	#############################
+ 
+	RUN service mysql start && mysql -upxuser -ppxuser -h localhost pyconfig < /opt/ISPyB/ispyb-ejb/db/pyconfig.sql
+
+	RUN service mysql start && sed -i 's/varchar(1024)/text/g' /opt/ISPyB/ispyb-ejb/db/pydb.sql && mysql -upxuser -ppxuser -h localhost pydb <  /opt/ISPyB/ispyb-ejb/db/pydb.sql
+
+	#############################
+	# Replacing pxadmin by pxuser
+	#############################
+
+	#RUN service mysql start && sed -i 's/pxadmin/pxuser/g' /opt/ISPyB/ispyb-ejb/db/pydb.sql && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/pydb.sql
+
+	#RUN service mysql start && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/schemastatus.sql
+
+	#############################
+	# RUNNING SQL SCRIPTS
+	#############################
+	RUN service mysql start && for entry in /opt/ISPyB/ispyb-ejb/db/scripts/ahead/*; do  echo "Running " $entry; mysql -upxuser -ppxuser pydb < $entry; done
+
+
 	
