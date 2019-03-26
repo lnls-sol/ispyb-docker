@@ -1,7 +1,17 @@
 #FROM dockcs.esrf.fr/cs/debian8:latest
-FROM debian:8
+FROM debian:9
 
 MAINTAINER Alejandro DE MARIA <demariaa@esrf.fr>
+
+#############################
+# ESRF specific for testing
+#############################
+#ENV proxy proxy.esrf.fr 
+#ENV proxy_port 3128
+#ENV http_proxy http://$proxy:$proxy_port
+#ENV https_proxy https://$proxy:$proxy_port
+
+
 
 # Profile GENERIC and env develpment are default
 #ENV profile GENERIC
@@ -21,7 +31,9 @@ ENV JAVA_HOME /opt/jdk
 # PACKAGES
 #######################
 
-RUN apt-get update && apt-get install -y wget unzip supervisor mysql-server mysql-client git vim python-suds python-pip && pip install requests
+RUN apt-get update 
+RUN apt-get install -y wget unzip supervisor mysql-server mysql-client git vim python-suds python-pip 
+RUN pip install requests
 
 #######################
 # INSTALLING JAVA
