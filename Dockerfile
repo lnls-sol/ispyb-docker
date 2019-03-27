@@ -150,6 +150,8 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 
 	RUN service mysql start && sed -i 's/varchar(1024)/text/g' /opt/ISPyB/ispyb-ejb/db/pydb.sql && mysql -upxuser -ppxuser -h localhost pydb <  /opt/ISPyB/ispyb-ejb/db/pydb.sql
 
+	RUN service mysql start && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/schemastatus.sql
+
 	#############################
 	# Replacing pxadmin by pxuser
 	#############################
@@ -161,7 +163,13 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
 	#############################
 	# RUNNING SQL SCRIPTS
 	#############################
-	RUN service mysql start && for entry in /opt/ISPyB/ispyb-ejb/db/scripts/ahead/*; do  echo "Running " $entry; mysql -upxuser -ppxuser pydb < $entry; done
+	RUN service mysql start && for entry in /opt/ISPyB/ispyb-ejb/db/scripts/ahead/*; do  sed -i 's/, ALGORITHM=INSTANT//g' $entry && mysql -upxuser -ppxuser pydb < $entry; done
 
+##################
+# DOCKER SUPERVISOR
+##################
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+CMD ["/usr/bin/supervisord"]
 	
