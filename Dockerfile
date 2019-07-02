@@ -1,14 +1,16 @@
-#FROM dockcs.esrf.fr/cs/debian8:latest
-FROM debian:8
+FROM debian:9
 
-MAINTAINER Alejandro DE MARIA <demariaa@esrf.fr>
+
 
 # Profile GENERIC and env develpment are default
 #ENV profile GENERIC
 
 #ISPyB repository
-ENV repository https://github.com/lnls-sol/ISPyB.git
-ENV branch manaca
+#ENV repository https://github.com/lnls-sol/ISPyB.git
+#ENV branch manaca
+
+ENV repository https://github.com/ispyb/ISPyB.git
+ENV branch master
 
 #ISPyB-client repository
 #ENV client_repository https://github.com/ispyb/ispyb-client.git
@@ -21,7 +23,9 @@ ENV JAVA_HOME /opt/jdk
 # PACKAGES
 #######################
 
-RUN apt-get update && apt-get install -y wget unzip supervisor mysql-server mysql-client git vim python-suds python-pip && pip install requests
+RUN apt-get update 
+RUN apt-get install -y wget unzip supervisor mysql-server mysql-client git vim python-suds python-pip 
+RUN pip install requests
 
 #######################
 # INSTALLING JAVA
@@ -75,8 +79,8 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
         #############################
 
         # Just copying the already downloaded repo
-        #RUN cd /opt && git clone $repository && cd ISPyB && git checkout $branch
-        COPY ISPyB /opt/ISPyB
+        RUN cd /opt && git clone $repository && cd ISPyB && git checkout $branch
+       
 
         #############################
         # REPLACE AUTHENTICATOR
@@ -118,4 +122,54 @@ RUN ln -s /opt/wildfly-10.1.0.Final /opt/wildfly
         #############################
 
         RUN cp /opt/ISPyB/ispyb-ear/target/ispyb.ear /opt/wildfly/standalone/deployments/ispyb.ear
+
+
+#######################
+# INSTALLING DB
+#######################
+
+	#############################
+	# CREATING DB
+	#############################
+
+	RUN service mysql start \
+	&& mysql -uroot -e "CREATE USER 'pxuser'@'%' IDENTIFIED BY 'pxuser';" \
+	&& mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pxuser'@'%';" \
+	&& mysql -uroot -e "CREATE DATABASE pyconfig;"  \
+	&& mysql -uroot -e "CREATE DATABASE pydb;" 
+
+	RUN service mysql start \
+	&& mysql -uroot -e "CREATE USER 'pxadmin'@'%' IDENTIFIED BY 'pxadmin';" \
+	&& mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pxadmin'@'%';" 
+
+	#############################
+	# CREATING SCHEMA
+	#############################
+ 
+	RUN service mysql start && mysql -upxuser -ppxuser -h localhost pyconfig < /opt/ISPyB/ispyb-ejb/db/pyconfig.sql
+
+	RUN service mysql start && sed -i 's/varchar(1024)/text/g' /opt/ISPyB/ispyb-ejb/db/pydb.sql && mysql -upxuser -ppxuser -h localhost pydb <  /opt/ISPyB/ispyb-ejb/db/pydb.sql
+
+	RUN service mysql start && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/schemastatus.sql
+
+	#############################
+	# Replacing pxadmin by pxuser
+	#############################
+
+	#RUN service mysql start && sed -i 's/pxadmin/pxuser/g' /opt/ISPyB/ispyb-ejb/db/pydb.sql && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/pydb.sql
+
+	#RUN service mysql start && mysql -upxuser -ppxuser -h localhost pydb < /opt/ISPyB/ispyb-ejb/db/schemastatus.sql
+
+	#############################
+	# RUNNING SQL SCRIPTS
+	#############################
+	RUN service mysql start && for entry in /opt/ISPyB/ispyb-ejb/db/scripts/ahead/*; do  sed -i 's/, ALGORITHM=INSTANT//g' $entry && mysql -upxuser -ppxuser pydb < $entry; done
+
+##################
+# DOCKER SUPERVISOR
+##################
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+CMD ["/usr/bin/supervisord"]
 	
